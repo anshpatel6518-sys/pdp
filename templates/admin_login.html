@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card glass-panel border-0 rounded-4 overflow-hidden mt-5">
+            <div class="card-header text-white text-center py-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</h4>
+                <p class="small mb-0 mt-1 opacity-75">Restricted Access</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form action="{{ url_for('do_admin_login') }}" method="POST">
+                    <div class="mb-4">
+                        <label for="pin" class="form-label fw-bold text-secondary">Administrator PIN</label>
+                        <div class="input-group input-group-lg border-bottom border-dark pb-2">
+                            <span class="input-group-text bg-transparent border-0"><i class="bi bi-key-fill text-dark fs-4"></i></span>
+                            <input type="password" class="form-control border-0 shadow-none text-center fw-bold fs-3 tracking-widest" style="letter-spacing: 0.5rem;" id="pin" name="pin" placeholder="•••••" required autofocus>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-premium btn-lg w-100 rounded-pill py-3 fw-bold mt-2 shadow-sm">
+                        Access Results
+                    </button>
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('login') }}" class="text-muted text-decoration-none small"><i class="bi bi-house-door-fill me-1"></i> Voter Portal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

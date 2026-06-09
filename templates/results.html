@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block scripts %}
+<div id="chart-data" style="display: none;" data-labels='{{ labels | tojson | forceescape }}'
+    data-values='{{ data | tojson | forceescape }}'></div>
+<script>
+    // Auto refresh every 5 seconds
+    setTimeout(function () {
+        window.location.reload();
+    }, 5000);
+
+    // Countdown timer for display
+    let timeLeft = 5;
+    setInterval(() => {
+        timeLeft--;
+        if (timeLeft >= 0) {
+            document.getElementById('time').innerText = timeLeft;
+        }
+    }, 1000);
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const chartDataEl = document.getElementById('chart-data');
+        const chartLabels = JSON.parse(chartDataEl.dataset.labels || '[]');
+        const chartValues = JSON.parse(chartDataEl.dataset.values || '[]');
+
+        const ctx = document.getElementById('resultsChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Live Vote Count',
+                    data: chartValues,
+                    backgroundColor: [
+                        'rgba(13, 110, 253, 0.7)',
+                        'rgba(25, 135, 84, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(255, 193, 7, 0.7)',
+                        'rgba(111, 66, 193, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(13, 110, 253)',
+                        'rgb(25, 135, 84)',
+                        'rgb(220, 53, 69)',
+                        'rgb(255, 193, 7)',
+                        'rgb(111, 66, 193)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 5,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 16, weight: 'bold' },
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            font: { size: 14 },
+                            color: '#e6f1ff'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 12, weight: 'bold' },
+                            color: '#e6f1ff'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h2 class="fw-bold mb-0" style="color: var(--text-primary);"><i
+            class="bi bi-bar-chart-line-fill text-primary me-2"></i> Live Election Results</h2>
+    <div>
+        <a href="{{ url_for('admin_register_voter') }}" class="btn btn-outline-primary btn-sm me-2 fw-bold shadow-sm"><i
+                class="bi bi-person-bounding-box"></i> Register Faces</a>
+        <span class="badge bg-success py-2 px-3 fw-normal fs-6 shadow-sm"><i class="bi bi-broadcast me-1"></i> Live
+            Updates</span>
+        <span class="badge bg-secondary ms-2 py-2 px-3 fw-normal fs-6 shadow-sm" id="countdown">Reload in <span
+                id="time">5</span>s</span>
+    </div>
+</div>
+
+<div class="card glass-panel border-0 rounded-4 overflow-hidden mb-5">
+    <div class="card-body p-4 p-md-5" style="height: 500px;">
+        <canvas id="resultsChart"></canvas>
+    </div>
+</div>
+
+<h4 class="fw-bold mb-4" style="color: var(--text-primary);"><i class="bi bi-list-stars text-warning me-2"></i> Detailed
+    Breakdown</h4>
+<div class="row">
+    {% for candidate in candidates_data %}
+    <div class="col-md-6 mb-4">
+        <div class="card glass-panel border-0 rounded-4 h-100 shadow-sm transition-hover">
+            <div class="card-body p-4 d-flex align-items-center">
+                {% if candidate.logo_filename %}
+                <div class="me-4">
+                    <img src="{{ url_for('static', filename='logos/' + candidate.logo_filename) }}"
+                        alt="{{ candidate.party }} logo" width="64" height="64" class="rounded-circle shadow">
+                </div>
+                {% else %}
+                <div class="me-4 d-flex align-items-center justify-content-center bg-light rounded-circle shadow"
+                    style="width: 64px; height: 64px;">
+                    <i class="bi bi-flag-fill text-primary fs-3"></i>
+                </div>
+                {% endif %}
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="mb-0 fw-bold text-dark fs-4">{{ candidate.name }}</h5>
+                        <span class="badge bg-primary rounded-pill fs-6 px-3 py-2 shadow-sm">{{ candidate.votes }}
+                            Votes</span>
+                    </div>
+                    <p class="mb-3 text-secondary">{{ candidate.party }}</p>
+                    <div class="progress rounded-pill shadow-inner"
+                        style="height: 12px; background-color: rgba(0,0,0,0.05);">
+                        {% set percentage = 0 %}
+                        {% if total_votes > 0 %}
+                        {% set percentage = (candidate.votes / total_votes * 100) %}
+                        {% endif %}
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                            role="progressbar" style="--progress: {{ percentage }}%; width: var(--progress);" aria-valuenow="{{ percentage }}"
+                            aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

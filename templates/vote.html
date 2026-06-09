@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card glass-panel border-0 rounded-4 overflow-hidden mt-2">
+            <div class="card-header text-white py-4 px-4 px-md-5 d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0 fw-bold">Select Your Candidate</h4>
+                    <p class="small mb-0 mt-1 opacity-75">Click on a candidate below to make your choice</p>
+                </div>
+                <div class="text-end d-none d-sm-block">
+                    <span class="badge bg-light text-primary fs-6 px-3 py-2 rounded-pill"><i class="bi bi-person-fill me-1"></i> {{ session.get('name') }}</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <form action="{{ url_for('submit_vote') }}" method="POST" id="voteForm">
+                    <div class="list-group list-group-flush border-bottom">
+                        {% for candidate in candidates %}
+                        <label class="list-group-item list-group-item-action p-4 d-flex align-items-center candidate-row border-0 border-bottom" style="cursor: pointer;">
+                            <input class="form-check-input me-4 fs-3 border-secondary" type="radio" name="candidate_id" value="{{ candidate.candidate_id }}" required>
+                            {% if candidate.logo_filename %}
+                            <div class="me-3">
+                                <img src="{{ url_for('static', filename='logos/' + candidate.logo_filename) }}" alt="{{ candidate.party }} logo" width="48" height="48" class="rounded-circle shadow-sm">
+                            </div>
+                            {% else %}
+                            <div class="me-3 d-flex align-items-center justify-content-center bg-light rounded-circle shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-flag-fill text-primary fs-4"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h4 class="mb-1 fw-bold text-dark">{{ candidate.name }}</h4>
+                                <p class="mb-0 text-secondary fs-6">{{ candidate.party }}</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="p-4 p-md-5 bg-light">
+                        <div class="form-check mb-4">
+                            <input class="form-check-input border-secondary" type="checkbox" id="confirmCheck" required>
+                            <label class="form-check-label text-dark fw-medium" for="confirmCheck">
+                                I confirm my selection. I understand that my vote is final and cannot be changed or retraced to me.
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-premium btn-lg w-100 rounded-pill py-3 fw-bold shadow">
+                            <i class="bi bi-envelope-paper-fill me-2"></i> Cast My Secure Vote
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

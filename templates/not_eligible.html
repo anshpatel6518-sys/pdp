@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card glass-panel shadow-lg border-0 rounded-4 mt-5 text-center p-4 p-md-5">
+            <div class="mb-4 text-danger">
+                <i class="bi bi-x-circle-fill" style="font-size: 5rem;"></i>
+            </div>
+            <h3 class="fw-bold mb-3">Not Eligible to Vote</h3>
+            <p class="lead text-muted mb-4">You must be at least 18 years old to participate in the voting process.</p>
+            <div class="alert alert-danger border-danger" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i> Your Aadhaar records indicate your age is under 18.
+            </div>
+            <a href="{{ url_for('login') }}" class="btn btn-premium rounded-pill px-4 mt-3 fw-bold">
+                Return to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

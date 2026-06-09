@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card glass-panel border-0 rounded-4 overflow-hidden mt-4">
+            <div class="card-header bg-dark text-white text-center py-4">
+                <h4 class="mb-0 fw-bold">Admin: Register Voter Face</h4>
+                <p class="small mb-0 mt-1 opacity-75">Assign a face scan to an existing Aadhaar Voter</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+
+                <div class="mb-4">
+                    <label for="aadhaar_id" class="form-label fw-bold text-secondary">Aadhaar ID (12 Digits)</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light"><i class="bi bi-credit-card-2-front"></i></span>
+                        <input type="text" class="form-control" id="aadhaar_id" placeholder="e.g. 123456789012"
+                            required>
+                        <button id="lookup-btn" class="btn btn-secondary">Lookup</button>
+                    </div>
+                </div>
+
+                <div id="voter-details" class="alert alert-success d-none mb-4">
+                    <strong>Voter Found:</strong> <span id="voter-name"></span> (Age: <span id="voter-age"></span>)<br>
+                    <small>Proceed to scan face to link it to this Aadhaar ID.</small>
+                </div>
+
+                <div id="error-alert" class="alert alert-danger d-none mb-4"></div>
+
+                <div id="video-container"
+                    class="position-relative bg-dark rounded-4 overflow-hidden shadow-sm mx-auto d-none"
+                    style="width: 100%; max-width: 480px; height: 360px;">
+                    <video id="webcam" autoplay muted playsinline class="w-100 h-100 object-fit-cover"></video>
+                    <canvas id="overlay" class="position-absolute top-0 start-0 w-100 h-100"></canvas>
+                    <div id="scanning-overlay"
+                        class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-75 text-white d-none">
+                        <div class="spinner-border text-success mb-2" role="status"></div>
+                        <span class="fw-bold fs-5">Registering Face...</span>
+                    </div>
+                </div>
+
+                <div id="status-message" class="alert alert-info mt-3" style="display: none;"></div>
+
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('admin_results') }}" class="btn btn-outline-secondary btn-sm"><i
+                    class="bi bi-arrow-left"></i> Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/face-api.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const aadhaarInput = document.getElementById('aadhaar_id');
+        const lookupBtn = document.getElementById('lookup-btn');
+        const voterDetails = document.getElementById('voter-details');
+        const voterName = document.getElementById('voter-name');
+        const voterAge = document.getElementById('voter-age');
+        const errorAlert = document.getElementById('error-alert');
+
+        const video = document.getElementById('webcam');
+        const overlay = document.getElementById('overlay');
+        const videoContainer = document.getElementById('video-container');
+        const statusMessage = document.getElementById('status-message');
+        const scanningOverlay = document.getElementById('scanning-overlay');
+
+        let modelsLoaded = false;
+        let detectionInProcess = false;
+        let currentVoterAadhaar = null;
+
+        lookupBtn.addEventListener('click', async () => {
+            const aadhaar = aadhaarInput.value.trim();
+            if (aadhaar.length !== 12) {
+                showError("Aadhaar must be 12 digits.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/lookup-voter?aadhaar_id=${aadhaar}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    errorAlert.classList.add('d-none');
+                    voterName.textContent = data.name;
+                    voterAge.textContent = data.age;
+                    voterDetails.classList.remove('d-none');
+                    currentVoterAadhaar = aadhaar;
+
+                    // Show camera and start
+                    startWebcam();
+                } else {
+                    showError(data.error || "Voter not found.");
+                    voterDetails.classList.add('d-none');
+                    videoContainer.classList.add('d-none');
+                    currentVoterAadhaar = null;
+                }
+            } catch (e) {
+                showError("Server error.");
+            }
+        });
+
+        function showError(msg) {
+            errorAlert.textContent = msg;
+            errorAlert.classList.remove('d-none');
+        }
+
+        function showStatus(msg) {
+            statusMessage.textContent = msg;
+            statusMessage.style.display = 'block';
+        }
+
+        async function loadModels() {
+            try {
+                showStatus("Loading A.I. Models...");
+                const MODEL_URL = '/static/models';
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+                modelsLoaded = true;
+                showStatus("Models loaded. Position face in camera...");
+            } catch (err) {
+                console.error(err);
+                showError("Failed to load models. Check connection.");
+            }
+        }
+
+        async function startWebcam() {
+            videoContainer.classList.remove('d-none');
+
+            if (!modelsLoaded) {
+                await loadModels();
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+            } catch (err) {
+                showError("Camera access denied or unsupported.");
+            }
+        }
+
+        video.addEventListener("play", () => {
+            if (statusMessage.textContent.includes("Models loaded")) {
+                setTimeout(() => statusMessage.style.display = "none", 2000);
+            }
+            const displaySize = { width: video.videoWidth || 480, height: video.videoHeight || 360 };
+            faceapi.matchDimensions(overlay, displaySize);
+
+            setInterval(async () => {
+                if (video.paused || video.ended || !modelsLoaded || detectionInProcess || !currentVoterAadhaar) return;
+
+                const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+
+                if (detections) {
+                    const ctx = overlay.getContext('2d');
+                    ctx.clearRect(0, 0, overlay.width, overlay.height);
+                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                    faceapi.draw.drawDetections(overlay, resizedDetections);
+
+                    // Successfully found a face, verify it's a good centered read
+                    if (detections.detection.score > 0.85) {
+                        detectionInProcess = true;
+                        scanningOverlay.classList.remove('d-none');
+
+                        const descriptor = Array.from(detections.descriptor);
+
+                        fetch("{{ url_for('api_register_face') }}", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                aadhaar_id: currentVoterAadhaar,
+                                face_encoding: descriptor
+                            })
+                        })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    scanningOverlay.querySelector('span').textContent = "Registration Complete!";
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1500);
+                                } else {
+                                    showError(data.error);
+                                    scanningOverlay.classList.add('d-none');
+                                    setTimeout(() => { detectionInProcess = false; }, 3000);
+                                }
+                            })
+                            .catch(err => {
+                                showError("Server error saving face.");
+                                scanningOverlay.classList.add('d-none');
+                                setTimeout(() => { detectionInProcess = false; }, 3000);
+                            });
+                    }
+                }
+            }, 500);
+        });
+    });
+</script>
+{% endblock %}

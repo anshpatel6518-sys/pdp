@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card glass-panel shadow-lg border-0 rounded-4 mt-5 text-center p-4 p-md-5">
+            <div class="mb-4 text-success">
+                <i class="bi bi-check-circle-fill" style="font-size: 5rem;"></i>
+            </div>
+            <h2 class="fw-bold mb-3">Vote Recorded Successfully!</h2>
+            <p class="lead text-muted mb-4">Thank you for participating in the democratic process.</p>
+            
+            <div class="card bg-light border-0 rounded-3 text-start mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Vote Receipt</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary fw-medium">Voter Name:</span>
+                        <span class="fw-bold text-dark">{{ name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary fw-medium">Timestamp:</span>
+                        <span class="fw-bold text-dark">{{ timestamp }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary fw-medium">Status:</span>
+                        <span class="badge bg-success">Confirmed & Encrypted</span>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('login') }}" class="btn btn-premium btn-lg rounded-pill px-5 fw-bold">
+                Return to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
